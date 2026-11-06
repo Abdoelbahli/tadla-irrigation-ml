@@ -101,7 +101,7 @@ in summer (6–11), as stated in CLAUDE.md; `et0_fao56` 2022 sum ≈ 1,162 mm, J
 | `train\train\ndvi_predictions.npy/.nc` (72 months, no 2018) | `train\train\train.ipynb` | 13-feature model; `reinfer_all.py` docstring says it had inference bugs |
 | `train\ndvi_predictions_2018.npy`, `ndvi_predictions_full.npy` | `files\infer_2018.py` | 13-feature model |
 | `train\ndvi_predictions_full_clean.npy` (84 × 2,627 × 5,643) | `files\reinfer_all.py` (last writer, 2026-05-13; `clean_predictions.py` writes the same name earlier) | **13-feature model** — confirmed by `train\inference_log.txt` ("Features (13): ['y','x',…,'year',…]") and by dates (file 05-13, no-year model created 05-26) |
-| `train\ndvi_predictions_1km.npy` + `_meta.json`, `outputs_chapter4\ndvi_predictions_1km\*.tif` | `files\infer_1km.py` | `ndvi_model_1km.txt` (10 features), ≥ 100 valid pixels per cell |
+| `train\ndvi_predictions_1km.npy` + `_meta.json`, `outputs_chapter4\ndvi_predictions_1km\*.tif` | `files\infer_1km.py` | `ndvi_model_1km.txt` (10 features), ≥ 100 valid pixels per cell; 779 cells have predictions (the 2022 holdout counts 799 cells/month, from the 20 m training table) |
 
 ### SHAP
 
