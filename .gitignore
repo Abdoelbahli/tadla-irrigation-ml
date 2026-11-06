@@ -1,0 +1,29 @@
+# --- data and generated outputs (never committed; anchored to the repo root so
+#     that the source package src/tadla/data/ is NOT ignored) ---
+/data/
+/outputs/
+
+# --- secrets ---
+.env
+*.env
+
+# --- heavy / binary data formats ---
+*.zarr
+*.npy
+*.parquet
+*.tif
+*.tiff
+*.nc
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- editors / OS ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

@@ -5,6 +5,13 @@ Goal: predict monthly NDVI over the irrigated Tadla plain (Morocco) with LightGB
 requirement maps. **Scientific accuracy is the top priority**: never invent numbers, sources or results; if something is
 uncertain, say so and check it.
 
+## Project identifiers
+- GitHub repo: https://github.com/Abdoelbahli/tadla-irrigation-ml
+- Earth Engine / GCP project: `pfe-abdellahelbahli` (read from `.env` as `GCP_PROJECT`; `.env` is git-ignored)
+- Study-area asset in Earth Engine: `projects/pfe-abdellahelbahli/assets/tadla_area` (uploaded from `area.shp`)
+- Local study-area shapefile: `C:\Users\abdel\OneDrive\Desktop\area\shp\area.shp`
+- Old scripts: `C:\Users\abdel\OneDrive\Desktop\train\files` and `C:\Users\abdel\OneDrive\Desktop\PFE_Project`
+
 ## Why this rebuild
 The old work is spread across 30+ scripts (diagnose_*, reinfer_*, add_et0_*, …) on a 10 m cube of ~1.2 billion cells.
 Rebuild it as ONE clean, reproducible repo whose numbered steps regenerate every result and figure of the thesis.

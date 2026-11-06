@@ -1,0 +1,61 @@
+# =============================================================================
+# tadla-irrigation-ml — single source of truth for paths, period, CRS and params.
+# Every script reads this file; nothing below should be hard-coded elsewhere.
+# Values marked `null` are deliberately undecided (see CLAUDE.md "Open points").
+# =============================================================================
+
+project:
+  name: tadla-irrigation-ml
+  gcp_project_env: GCP_PROJECT          # Earth Engine project id is read from .env
+
+paths:
+  data_dir: data                         # git-ignored
+  outputs_dir: outputs                   # git-ignored; each step writes outputs/<step>/
+  docs_dir: docs
+  area_shapefile: C:/Users/abdel/OneDrive/Desktop/area/shp/area.shp
+  gee_area_asset: projects/pfe-abdellahelbahli/assets/tadla_area
+
+crs:
+  epsg: 26191                            # Merchich / Nord Maroc (same as area.shp)
+
+grid:
+  cell_size_m: 1000                      # fixed 1 km grid, built in Phase 1
+
+period:
+  # Fixed in Phase 1 after checking each collection's real end date in Earth Engine.
+  # Target 2016–2025, complete calendar years only.
+  start_year: null
+  end_year: null
+  old_period: [2017, 2023]               # Sentinel-2-era period of the old work (for comparison)
+
+# -----------------------------------------------------------------------------
+# Irrigation (FAO-56). The Kc–NDVI coefficients are an OPEN POINT (CLAUDE.md §1–2):
+# they must be checked against Duchemin et al. 2006 and Bausch & Neale 1987
+# before any value is entered here. Left null on purpose.
+# -----------------------------------------------------------------------------
+irrigation:
+  kc_ndvi:
+    duchemin_2006: {a: null, b: null}
+    bausch_neale_1987: {a: null, b: null}
+  kc_clip: [0.0, 1.3]
+  ndvi_vegetated_min: 0.20
+  stress_ndvi_max: 0.30
+
+# -----------------------------------------------------------------------------
+# Phase 0 — inventory of the old material (read-only walk, nothing is deleted)
+# -----------------------------------------------------------------------------
+inventory:
+  roots:
+    - C:/Users/abdel/OneDrive/Desktop/train
+    - C:/Users/abdel/OneDrive/Desktop/PFE_Project
+    - D:/CHIRPS
+    - D:/climat_data
+    - D:/COMBINED_DATA
+    - D:/ERA5
+    - D:/ERA5-11
+    - D:/NDVI_NetCDF
+  report: docs/cleanup_report.md
+  full_listing_csv: outputs/00_inventory/inventory_full.csv
+  n_largest: 30
+  heavy_file_gb: 0.1                     # OneDrive "heavy" threshold (GB = 1e9 bytes)
+  small_derived_mb: 10                   # derived tables below this size are kept (category C)
