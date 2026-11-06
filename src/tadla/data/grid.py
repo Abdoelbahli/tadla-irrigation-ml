@@ -68,3 +68,11 @@ def build_grid(area: gpd.GeoDataFrame, cell_size: float, epsg: int) -> tuple[gpd
     frame["epsg"] = epsg
     frame["area_m2"] = geom.area
     return cells, frame
+
+
+def clip_cells(cells: gpd.GeoDataFrame, area: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Cells cut to the study area (the part of each cell inside area.shp); same rows/ids."""
+    geom = area.to_crs(cells.crs).geometry.union_all()
+    out = cells.copy()
+    out["geometry"] = cells.geometry.intersection(geom)
+    return out

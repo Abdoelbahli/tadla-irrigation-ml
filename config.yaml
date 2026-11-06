@@ -17,6 +17,8 @@ paths:
   # shift, so it sits ~152 m west-south-west of area.shp. Never use it for geometry; the grid
   # (built from area.shp) is sent to Earth Engine in EPSG:26191 instead.
   gee_area_asset: projects/pfe-abdellahelbahli/assets/tadla_area
+  # corrected copy (decisions.md D4), created by scripts/01b_build_grid.py --upload-area-asset
+  gee_area_asset_v2: projects/pfe-abdellahelbahli/assets/tadla_area_v2
 
 crs:
   epsg: 26191                            # Merchich / Nord Maroc (same as area.shp)
@@ -58,6 +60,33 @@ period:
   end_year: 2025
   old_period: [2017, 2023]               # Sentinel-2-era period of the old work (for comparison)
   modis_experiment: [2001, 2025]         # OPTIONAL long-record experiment (MOD13Q1 starts 2000-02-18)
+
+# -----------------------------------------------------------------------------
+# Phase 1, step 3 — per-cell export (scripts/01_export.py)
+# -----------------------------------------------------------------------------
+export:
+  out_dir: outputs/01_export
+  hls:
+    nir_band: {hls_s30: B8A, hls_l30: B5}   # B8A = S2 band harmonised with Landsat OLI B5
+    red_band: B4
+    # Fmask bits masked: 1 cloud, 2 adjacent to cloud/shadow, 3 cloud shadow, 4 snow/ice.
+    # Not masked: 5 water, 6-7 aerosol level (decisions.md D6).
+    fmask_masked_bits: [1, 2, 3, 4]
+    crs: EPSG:32629                         # native HLS grid (UTM 29N, 30 m, origin multiple of 30 m)
+    scale: 30
+  climate:
+    sample_scale_m: 100                     # sampling grid for area-weighted means of coarse pixels
+  dem:
+    collection: JAXA/ALOS/AW3D30/V4_1       # V3_2 (used by the old work) is deprecated in EE
+    band: DSM
+    crs: EPSG:32629
+    scale: 30
+  soilgrids:
+    wcs: https://maps.isric.org/mapserv
+    properties: [clay, silt, sand, ocd, wv0010]
+    depths: [0-5cm, 5-15cm]                 # depth used for modelling decided later (decisions.md)
+    resample_m: 25                          # nearest-neighbour resampling for cell means
+    raw_dir: data/soilgrids                 # downloaded GeoTIFFs (git-ignored)
 
 # -----------------------------------------------------------------------------
 # Irrigation (FAO-56). The Kc–NDVI coefficients are an OPEN POINT (CLAUDE.md §1–2):

@@ -10,10 +10,14 @@ Reads config.yaml (paths.area_shapefile, crs.epsg, grid.cell_size_m) and writes 
 Checks: area.shp area vs the 701.83 km² of CLAUDE.md; sum of inside areas == area; local
 area.shp vs the Earth Engine asset (same polygon?); cell counts per inside-fraction class.
 
-Usage:  python scripts/01b_build_grid.py
+Usage:  python scripts/01b_build_grid.py [--upload-area-asset]
+
+--upload-area-asset  writes area.shp (with the correct datum shift) to the EE asset
+                     paths.gee_area_asset_v2 and checks it against area.shp.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
@@ -30,7 +34,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from shapely.geometry import mapping  # noqa: E402
 
 from tadla.config import gcp_project, load_config, repo_path  # noqa: E402
-from tadla.data.gee_export import init_ee  # noqa: E402
+from tadla.data.gee_export import init_ee, upload_geometry_asset  # noqa: E402
 from tadla.data.grid import build_grid  # noqa: E402
 
 EXPECTED_AREA_KM2 = 701.83  # CLAUDE.md, "Established facts"
@@ -50,7 +54,18 @@ def compare_with_asset(local_geom, asset_id: str, epsg: int) -> dict:
     return res
 
 
+def asset_exists(asset_id: str) -> bool:
+    try:
+        ee.data.getAsset(asset_id)
+        return True
+    except ee.EEException:
+        return False
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--upload-area-asset", action="store_true")
+    args = ap.parse_args()
     cfg = load_config()
     out = repo_path(cfg["paths"]["outputs_dir"]) / "01b_grid"
     out.mkdir(parents=True, exist_ok=True)
@@ -90,6 +105,22 @@ def main() -> None:
     checks.update({k: round(v, 6) for k, v in asset_cmp.items()})
     log.info("EE asset area %.4f km²; symmetric difference with area.shp %.6f km²",
              asset_cmp["asset_area_km2"], asset_cmp["symdiff_area_km2"])
+
+    if args.upload_area_asset:
+        v2 = cfg["paths"]["gee_area_asset_v2"]
+        if asset_exists(v2):
+            raise FileExistsError(f"{v2} already exists; delete it first if it must be rebuilt")
+        log.info("uploading area.shp to %s ...", v2)
+        upload_geometry_asset(area.geometry.union_all(), epsg, v2,
+                              {"name": "tadla_area", "source": "area.shp (EPSG:26191, standard EPSG datum shift)"})
+        v2_cmp = compare_with_asset(area.geometry.union_all(), v2, epsg)
+        checks.update({f"v2_{k}": round(v, 6) for k, v in v2_cmp.items()})
+        log.info("v2 asset area %.4f km²; symmetric difference with area.shp %.6f km²",
+                 v2_cmp["asset_area_km2"], v2_cmp["symdiff_area_km2"])
+    elif cfg["paths"].get("gee_area_asset_v2") and asset_exists(cfg["paths"]["gee_area_asset_v2"]):
+        v2_cmp = compare_with_asset(area.geometry.union_all(), cfg["paths"]["gee_area_asset_v2"], epsg)
+        checks.update({f"v2_{k}": round(v, 6) for k, v in v2_cmp.items()})
+        log.info("v2 asset: symmetric difference with area.shp %.6f km²", v2_cmp["symdiff_area_km2"])
 
     cells.to_file(out / "grid_1km.gpkg", driver="GPKG", layer="grid_1km")
     cells.drop(columns="geometry").to_csv(out / "grid_1km.csv", index=False)

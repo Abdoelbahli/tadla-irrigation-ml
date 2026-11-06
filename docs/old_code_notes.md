@@ -170,3 +170,15 @@ in those folders.
     slope map recomputes slope from the DEM, so it is not affected).
 12. **Phase 1 cell 29** converts clay to % but writes the original array (harmless here, the final cube is in %).
 13. **`.env` files** exist in `PFE\` and `train\Viz\Climat\`: never include them in the code archive.
+14. **Soil depth is 0–5 cm, not 0–10 cm:** Phase 1 nb cell 23 downloads `<prop>_0-5cm_mean` from the ISRIC WCS
+    (SoilGrids has no 0–10 cm layer; its depths are 0–5, 5–15, 15–30 … cm). The same cell comments `wv0010` as
+    "water content at saturation"; per ISRIC it is the **volumetric water content at 10 kPa** suction.
+15. **`ocd` in the old cube is 10× too small:** median 2.76 in `clipped_dataset_v5.zarr`, while SoilGrids `ocd`
+    0–5 cm over the area has median 272 hg/m³ = 27.2 kg/m³ (checked 2026-11-06). clay (29.4 vs 30.3 %) and
+    wv0010 (34.4 vs 34.7 %) agree, so `ocd` was probably divided by 10 twice. Harmless for LightGBM (monotonic
+    rescaling), but any `ocd` value or axis quoted in the thesis (e.g. SHAP dependence plots) is wrong by 10×.
+16. **The old "FAO-56 ET0" is not a reference ET0 (reconstructed, 2026-11-06):** recomputing 2022 at cell
+    X380_Y190 with the speed of the daily-mean wind vector and ERA5-Land's surface net radiation reproduces
+    `ERA5_FAO56_ET0_Tadla_2017-2023.tif` within 0.5–2.5 % every month (1132 vs 1149 mm; r = 0.9999). Standard FAO-56
+    (scalar wind, reference-grass Rn) gives 1532 mm there. The "≈ 1150 mm/yr, July ≈ 165 mm" of CLAUDE.md comes from
+    this file. See decisions.md D7. The old irrigation requirements (IR = Kc·ET0 − P) inherit the lower ET0.

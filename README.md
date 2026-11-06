@@ -25,7 +25,10 @@ data/, outputs/    generated, git-ignored (outputs/<step>/ per step)
 | Step | Script | Status |
 |---|---|---|
 | 0 | `scripts/00_inventory.py` — read-only inventory of the old material → `docs/cleanup_report.md` | done |
-| 1 | `scripts/01_export.py` — Earth Engine export per 1 km cell and month (HLS NDVI, CHIRPS, ERA5-Land ET and FAO-56 ET0, SoilGrids, DEM) | to do |
+| 1a | `scripts/01a_check_collections.py` — real date coverage of every collection | done |
+| 1b | `scripts/01b_build_grid.py` — fixed 1 km grid (EPSG:26191, 800 cells) | done |
+| 1 | `scripts/01_export.py` — per cell and month: HLS NDVI, CHIRPS, ERA5-Land actual ET and FAO-56 ET0, soil moisture, T2m, SoilGrids, DEM | 2022 done |
+| 1c | `scripts/01c_check_export.py` — sanity checks of one exported year | 2022 done |
 | 2 | `scripts/02_build_dataset.py` | to do |
 | 3–5 | `03_train.py`, `04_validate.py` (leave-one-year-out), `05_explain.py` (SHAP) | to do |
 | 6–8 | `06_predict.py`, `07_irrigation.py`, `08_figures.py` | to do |
