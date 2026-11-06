@@ -13,13 +13,19 @@ paths:
   outputs_dir: outputs                   # git-ignored; each step writes outputs/<step>/
   docs_dir: docs
   area_shapefile: C:/Users/abdel/OneDrive/Desktop/area/shp/area.shp
+  # WARNING (docs/decisions.md D4): this asset is area.shp uploaded WITHOUT the Merchich datum
+  # shift, so it sits ~152 m west-south-west of area.shp. Never use it for geometry; the grid
+  # (built from area.shp) is sent to Earth Engine in EPSG:26191 instead.
   gee_area_asset: projects/pfe-abdellahelbahli/assets/tadla_area
 
 crs:
   epsg: 26191                            # Merchich / Nord Maroc (same as area.shp)
 
 grid:
-  cell_size_m: 1000                      # fixed 1 km grid, built in Phase 1
+  cell_size_m: 1000                      # fixed 1 km grid, built by scripts/01b_build_grid.py
+  # cells are aligned on multiples of cell_size_m in EPSG:26191 (same alignment as the old
+  # 1 km grid, so old and new cells can be matched one to one)
+  file: outputs/01b_grid/grid_1km.gpkg
 
 # -----------------------------------------------------------------------------
 # Earth Engine collections (availability checked by scripts/01a_check_collections.py)
@@ -45,11 +51,13 @@ gee:
   hls_tiles: [T29SPR, T29SQR, T29SQS]
 
 period:
-  # Fixed in Phase 1 after checking each collection's real end date in Earth Engine.
-  # Target 2016–2025, complete calendar years only.
-  start_year: null
-  end_year: null
+  # Confirmed 2026-11-06 after checking each collection in Earth Engine (docs/decisions.md D1):
+  # HLS S30 starts 2015-11-29 -> 2016 is the first complete year; every collection is
+  # complete for 2025 and partial for 2026.
+  start_year: 2016
+  end_year: 2025
   old_period: [2017, 2023]               # Sentinel-2-era period of the old work (for comparison)
+  modis_experiment: [2001, 2025]         # OPTIONAL long-record experiment (MOD13Q1 starts 2000-02-18)
 
 # -----------------------------------------------------------------------------
 # Irrigation (FAO-56). The Kc–NDVI coefficients are an OPEN POINT (CLAUDE.md §1–2):
