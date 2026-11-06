@@ -21,6 +21,29 @@ crs:
 grid:
   cell_size_m: 1000                      # fixed 1 km grid, built in Phase 1
 
+# -----------------------------------------------------------------------------
+# Earth Engine collections (availability checked by scripts/01a_check_collections.py)
+# -----------------------------------------------------------------------------
+gee:
+  collections:
+    hls_s30: NASA/HLS/HLSS30/v002        # Sentinel-2 part of HLS v2.0, 30 m
+    hls_l30: NASA/HLS/HLSL30/v002        # Landsat 8/9 part of HLS v2.0, 30 m
+    chirps_daily: UCSB-CHG/CHIRPS/DAILY
+    chirps_pentad: UCSB-CHG/CHIRPS/PENTAD
+    era5l_hourly: ECMWF/ERA5_LAND/HOURLY
+    era5l_daily: ECMWF/ERA5_LAND/DAILY_AGGR
+    era5l_monthly: ECMWF/ERA5_LAND/MONTHLY_AGGR
+    modis_ndvi: MODIS/061/MOD13Q1        # optional long-record experiment
+  check_years: [1950, 2026]              # years scanned for image counts (ERA5-Land starts in 1950)
+  # too large to scan from 1950 or to sort (EE "user memory limit exceeded"): counted from
+  # heavy_check_from only, first image not searched. ERA5-Land hourly starts 1950 (catalogue).
+  heavy_collections: [era5l_hourly]
+  heavy_check_from: 2013
+  # MGRS tiles that really cover the study area. filterBounds() also returns HLS tiles of
+  # UTM zones 01/60 whose antimeridian-crossing footprints "intersect" everything (checked
+  # 2026-11-06); they hold no pixels here but inflate image counts, so HLS is filtered by tile.
+  hls_tiles: [T29SPR, T29SQR, T29SQS]
+
 period:
   # Fixed in Phase 1 after checking each collection's real end date in Earth Engine.
   # Target 2016–2025, complete calendar years only.
