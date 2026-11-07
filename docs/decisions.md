@@ -68,9 +68,13 @@ Evidence: `scripts/01b_build_grid.py` and checks run on 2026-11-06.
   it is the band carrying the HLS bandpass adjustment) and B5 for L30; red = B4. HLS v2.0 reflectances are
   already scaled to 0–1 in Earth Engine.
 - Fmask (bit definitions checked in the EE catalogue): pixels with bit 1 cloud, 2 adjacent to cloud/shadow,
-  3 cloud shadow or 4 snow/ice set are masked. Not masked: bit 5 water (temporarily flooded irrigated fields
-  could be flagged) and bits 6–7 aerosol level (a clear July pixel checked was flagged "high"; masking it would
-  remove much of the summer data). Can be revisited.
+  3 cloud shadow, 4 snow/ice or 5 water set are masked (revised 2026-11-07, see below). Bits 6–7 (aerosol level)
+  are not masked; the share of clear observations flagged "high" is exported per cell-month (`aero_hi_frac`)
+  for a later sensitivity test.
+- Evidence (2022, all clear S30+L30 observations over the area, 7 months tested): water flag on 0.01–0.10 % of
+  clear observations, NDVI area mean unchanged at the 4th decimal → masked (water is not vegetation; no flooded
+  fields expected per the author). Aerosol "high" on 26–58 % of clear observations; masking it changes the
+  monthly area-mean NDVI by −0.007 to +0.013 but would remove about half of the observations → not masked.
 - Per pixel: granules of the same day are averaged (a day counts once), then the monthly mean of clear days and
   the number of clear days. Per cell: mean over 30 m pixel centres inside the clipped cell, spatial std,
   valid-pixel fraction, mean and max clear days.
@@ -98,10 +102,15 @@ Evidence: `scripts/01b_build_grid.py` and checks run on 2026-11-06.
   of the daily-mean wind vector and (b) ERA5-Land's own surface net radiation reproduces the old file within
   0.5–2.5 % in every month (1132 vs 1149 mm, monthly correlation 0.9999). Both choices depart from the FAO-56
   reference definition (scalar wind speed; Rn of the reference grass). Each alone: −10 % (wind), −16 % (Rn).
-  Hargreaves (Eq. 52) gives 1710 mm at that cell. No independent station value was found yet.
+  Hargreaves (Eq. 52) gives 1710 mm at that cell.
   Caveat (FAO-56 Annex 6): ERA5-Land does not simulate irrigation, so its air is drier/hotter than over the
   irrigated plain; using e°(Tmin) as humidity lowers ET0 by only 4 % at that cell.
-  **Pending: your confirmation, then update of the CLAUDE.md "established facts".**
+- Independent gridded reference-ET products (no station data available to the author), 2022 area means:
+  TerraClimate `pet` 1843 mm (July 272), FAO WaPOR v2 L1 RET 1720 mm (July 242), FAO WaPOR v3 L1 RET 1614 mm
+  (July 237); monthly correlation with this export 0.996–0.999. This export (1544 mm) is the lowest of the
+  four; the old ≈ 1150 mm is far below all of them. Compared every year in `01c_check_export.py`.
+- **Decision (confirmed 2026-11-07): standard FAO-56 ET0 as computed here; CLAUDE.md "established facts"
+  updated accordingly.**
 
 ## D8 — DEM: ALOS AW3D30 V4.1 (2026-11-06)
 
@@ -117,4 +126,5 @@ min, max on the 30 m UTM 29N grid. 2022 check: cell means 369–475 m, median 41
 - Nodata: values ≤ 0 (0 in 9 layers, −32768 in wv0010 5–15 cm; the GeoTIFFs declare none). 796/800 cells
   have values; clay+silt+sand = 100.0–100.1 %.
 - SoilGrids has no 0–10 cm layer; the old work used 0–5 cm. Both 0–5 and 5–15 cm are exported.
-  **Pending: which depth (or depth-weighted 0–15 cm) is used for modelling.**
+- **Decision (2026-11-07): modelling uses the depth-weighted 0–15 cm topsoil value**
+  v = (5·v₀₋₅ + 10·v₅₋₁₅) / 15 (columns `<prop>_0_15cm` in `static/soil.parquet`).

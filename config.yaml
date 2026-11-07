@@ -69,9 +69,10 @@ export:
   hls:
     nir_band: {hls_s30: B8A, hls_l30: B5}   # B8A = S2 band harmonised with Landsat OLI B5
     red_band: B4
-    # Fmask bits masked: 1 cloud, 2 adjacent to cloud/shadow, 3 cloud shadow, 4 snow/ice.
-    # Not masked: 5 water, 6-7 aerosol level (decisions.md D6).
-    fmask_masked_bits: [1, 2, 3, 4]
+    # Fmask bits masked: 1 cloud, 2 adjacent to cloud/shadow, 3 cloud shadow, 4 snow/ice, 5 water.
+    # Not masked: 6-7 aerosol level ("high" on 26-58 % of clear 2022 observations); its share is
+    # exported as aero_hi_frac (decisions.md D6).
+    fmask_masked_bits: [1, 2, 3, 4, 5]
     crs: EPSG:32629                         # native HLS grid (UTM 29N, 30 m, origin multiple of 30 m)
     scale: 30
   climate:
@@ -84,7 +85,10 @@ export:
   soilgrids:
     wcs: https://maps.isric.org/mapserv
     properties: [clay, silt, sand, ocd, wv0010]
-    depths: [0-5cm, 5-15cm]                 # depth used for modelling decided later (decisions.md)
+    depths: [0-5cm, 5-15cm]
+    # modelling uses the depth-weighted 0-15 cm topsoil value (decisions.md D9):
+    # v_0_15 = (5 * v_0_5 + 10 * v_5_15) / 15
+    depth_weights: {0-5cm: 5, 5-15cm: 10}
     resample_m: 25                          # nearest-neighbour resampling for cell means
     raw_dir: data/soilgrids                 # downloaded GeoTIFFs (git-ignored)
 

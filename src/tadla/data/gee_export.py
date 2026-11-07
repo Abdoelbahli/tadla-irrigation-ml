@@ -173,9 +173,10 @@ def _hls_ndvi(coll_id: str, nir: str, red: str, masked_bits: list[int], tiles: l
     HLS v2.0 reflectances are already scaled to 0–1 in EE (checked 2026-11-06); NDVI is a ratio
     so scaling does not matter anyway. NIR = B8A for S30 (the band harmonised with OLI B5,
     it carries the bandpass adjustment), B5 for L30; red = B4 for both.
-    Fmask: a pixel is kept only if none of `masked_bits` is set
-    (1 cloud, 2 adjacent to cloud/shadow, 3 cloud shadow, 4 snow/ice; water (5) and the
-    aerosol level (6–7) are NOT masked — see docs/decisions.md).
+    Fmask: a pixel is kept only if none of `masked_bits` is set (config: 1 cloud, 2 adjacent to
+    cloud/shadow, 3 cloud shadow, 4 snow/ice, 5 water). The aerosol level (bits 6–7) is NOT
+    masked; band `aero_hi` (1 if level = 3 "high", else 0) is carried on the kept pixels so the
+    share of high-aerosol observations can be used later (docs/decisions.md D6).
     Pixels with nir + red <= 0 or NDVI outside [-1, 1] are dropped.
     """
     bitmask = sum(1 << b for b in masked_bits)
@@ -185,11 +186,13 @@ def _hls_ndvi(coll_id: str, nir: str, red: str, masked_bits: list[int], tiles: l
     def prep(img):
         r = img.select(red)
         n = img.select(nir)
+        fm = img.select("Fmask")
         ndvi = n.subtract(r).divide(n.add(r)).rename("ndvi")
-        ok = (img.select("Fmask").bitwiseAnd(bitmask).eq(0)
+        aero_hi = fm.rightShift(6).bitwiseAnd(3).eq(3).rename("aero_hi")
+        ok = (fm.bitwiseAnd(bitmask).eq(0)
               .And(n.add(r).gt(0)).And(ndvi.gte(-1)).And(ndvi.lte(1)))
-        return ndvi.updateMask(ok).copyProperties(img, ["system:time_start"]).set(
-            "day", img.date().format("YYYY-MM-dd"))
+        return (ee.Image.cat(ndvi, aero_hi).updateMask(ok)
+                .copyProperties(img, ["system:time_start"]).set("day", img.date().format("YYYY-MM-dd")))
 
     return col.map(prep)
 
@@ -204,7 +207,8 @@ def hls_month(cells: ee.FeatureCollection, cfg_hls: dict, tiles: list[str], regi
     3. per cell (pixel centres inside the clipped cell, native 30 m UTM 29N grid):
        ndvi_mean, ndvi_stdDev (spatial), ndvi_count (pixels with >= 1 clear day),
        px_count (all pixels) -> valid fraction = ndvi_count / px_count,
-       nclear_mean / nclear_max (clear days per pixel, 0 where never clear).
+       nclear_mean / nclear_max (clear days per pixel, 0 where never clear),
+       aerohi_mean (share of the clear daily observations flagged high aerosol).
     """
     start = ee.Date.fromYMD(year, month, 1)
     end = start.advance(1, "month")
@@ -217,8 +221,9 @@ def hls_month(cells: ee.FeatureCollection, cfg_hls: dict, tiles: list[str], regi
     daily = ee.ImageCollection.fromImages(
         days.map(lambda d: both.filter(ee.Filter.eq("day", d)).mean().set("day", d)))
     img = ee.Image.cat(
-        daily.mean().rename("ndvi"),
-        daily.count().unmask(0).rename("nclear"),
+        daily.select("ndvi").mean().rename("ndvi"),
+        daily.select("ndvi").count().unmask(0).rename("nclear"),
+        daily.select("aero_hi").mean().rename("aerohi"),
         ee.Image.constant(1).rename("px"),
     )
     reducer = (ee.Reducer.mean().combine(ee.Reducer.stdDev(), sharedInputs=True)

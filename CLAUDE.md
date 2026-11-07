@@ -27,7 +27,10 @@ The old files stay untouched as the fallback until the new results are validated
   2022 temporal holdout R² = 0.37 (RMSE 0.105, bias +0.061).
 - `evaporation` in the old model = ERA5-Land `total_evaporation` (ACTUAL ET), |value|×1000, monthly sum of daily values,
   range 1.2–88.6 mm/month, spring peak. It is NOT FAO-56 ET0.
-- FAO-56 ET0 (Penman-Monteith, from ERA5-Land base variables): ≈ 1150 mm/yr, July ≈ 165 mm. Used in ETc = Kc·ET0.
+- FAO-56 ET0 (Penman-Monteith, from ERA5-Land base variables; scalar wind from hourly data, reference-grass Rn):
+  2022 area mean 1544 mm/yr, July 218 mm (multi-year values in docs/results.md). Independent products for 2022:
+  TerraClimate 1843, WaPOR v2 1720, WaPOR v3 1614 mm. Used in ETc = Kc·ET0. The old work's "≈ 1150 mm/yr, July ≈ 165"
+  was NOT a reference ET0 (vector-mean wind + ERA5 surface net radiation; docs/decisions.md D7, updated 2026-11-07).
 - Old LightGBM params: regression/rmse, learning_rate 0.1, num_leaves 31, feature_fraction 0.8, bagging_fraction 0.8,
   bagging_freq 5, min_data_in_leaf 20, 1000 rounds, early stopping 50. CPU only (the Intel UHD GPU cannot run LightGBM's GPU trainer).
 - Irrigation: Kc = a·NDVI + b, clip [0, 1.3]; IR = max(0, Kc·ET0 − rainfall); only where NDVI > 0.20.
@@ -37,7 +40,8 @@ The old files stay untouched as the fallback until the new results are validated
 ## Open points to resolve (do not silently assume)
 1. Duchemin et al. 2006 may define Kcb = 1.64·(NDVI − 0.14) (i.e. b ≈ −0.23). Check the paper before coding the coefficients.
 2. Bausch & Neale 1987 is a maize study (Colorado), not "Mediterranean"; check its coefficients.
-3. Which DEM feeds `dem`: SRTM 30 m or the ALOS-derived 10 m `tadla_dem_10m.tif`. Pick one and document it.
+3. ~~Which DEM feeds `dem`~~ — RESOLVED: the old `dem` is ALOS AW3D30 V3.2 (verified, docs/old_code_notes.md §1);
+   the rebuild uses ALOS AW3D30 V4.1 (docs/decisions.md D8). The old figure label "SRTM" was wrong.
 
 ## Decisions for the rebuild
 0. **Period: extend beyond 2017–2023, complete years only (up to Dec 2025).** Check each collection's real end date
@@ -52,8 +56,9 @@ The old files stay untouched as the fallback until the new results are validated
    For every month and cell, also export the valid-pixel fraction and the number of clear observations; drop cell-months
    below a documented threshold.
 1. Aggregate to the 1 km grid INSIDE Google Earth Engine: per cell & month, mean of valid NDVI pixels
-   + valid-pixel fraction; CHIRPS monthly sum; ERA5-Land actual ET and FAO-56 ET0; SoilGrids 0–10 cm
-   (clay, silt, sand, ocd, wv0010 → volumetric %); DEM. 799 cells × ~120 months is small: pull results as tables
+   + valid-pixel fraction; CHIRPS monthly sum; ERA5-Land actual ET and FAO-56 ET0; SoilGrids depth-weighted 0–15 cm
+   (from the 0–5 and 5–15 cm layers; SoilGrids has no 0–10 cm layer and the old work used 0–5 cm; clay, silt, sand %,
+   ocd kg/m³, wv0010 = water content at 10 kPa, vol %; docs/decisions.md D9); DEM. 799 cells × ~120 months is small: pull results as tables
    (reduceRegions) instead of big raster exports. No 10 m cube.
    Candidate extra predictors (test, keep only if they help LOYO): ERA5-Land soil moisture (`volumetric_soil_water_layer_1/2`),
    2 m air temperature, 3-month cumulative rainfall, lag-1 NDVI, an irrigated/cropland mask (e.g. ESA WorldCover).

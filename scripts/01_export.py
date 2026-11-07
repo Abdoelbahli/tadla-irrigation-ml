@@ -3,8 +3,10 @@
 Reads config.yaml and the grid of scripts/01b_build_grid.py. Writes to outputs/01_export/:
   static/cells.parquet          cell_id, row, col, frac_inside, x/y and lon/lat of the clipped-cell centroid
   static/dem.parquet            ALOS AW3D30 V4.1 elevation per cell (mean, stdDev, min, max; m)
-  static/soil.parquet           SoilGrids clay, silt, sand (%), ocd (kg/m³), wv0010 (vol %), 0–5 and 5–15 cm
-  <year>/hls_monthly.parquet    NDVI mean/std, valid-pixel fraction, clear days per pixel, per cell-month
+  static/soil.parquet           SoilGrids clay, silt, sand (%), ocd (kg/m³), wv0010 (vol %): 0–5, 5–15 cm and
+                                the depth-weighted 0–15 cm value used for modelling
+  <year>/hls_monthly.parquet    NDVI mean/std, valid-pixel fraction, clear days per pixel, share of
+                                high-aerosol observations, per cell-month
   <year>/hls_meta.json          acquisition days and granules per month
   <year>/climate_daily.parquet  daily ERA5-Land / CHIRPS in physical units + FAO-56 ET0, per cell-day
   <year>/climate_monthly.parquet
@@ -39,7 +41,8 @@ from tadla.data.grid import clip_cells  # noqa: E402
 
 log = logging.getLogger("01_export")
 
-HLS_COLUMNS = ["cell_id", "ndvi_mean", "ndvi_stdDev", "ndvi_count", "px_count", "nclear_mean", "nclear_max"]
+HLS_COLUMNS = ["cell_id", "ndvi_mean", "ndvi_stdDev", "ndvi_count", "px_count", "nclear_mean", "nclear_max",
+               "aerohi_mean"]
 
 
 def retry(fn, what: str, tries: int = 4, wait_s: int = 20):
@@ -87,6 +90,9 @@ def export_static(cfg, cc: gpd.GeoDataFrame, fc, out: Path, overwrite: bool) -> 
                 raw = soilgrids.cell_means(tif, cc, sc["resample_m"])
                 # mapped units -> conventional units (see tadla.data.soilgrids docstring)
                 soil[f"{prop}_{depth.replace('-', '_')}"] = raw / soilgrids.CONVERSION[prop]
+            # depth-weighted topsoil value (decisions.md D9)
+            w = sc["depth_weights"]
+            soil[f"{prop}_0_15cm"] = sum(soil[f"{prop}_{d.replace('-', '_')}"] * wt for d, wt in w.items()) / sum(w.values())
         soil.to_parquet(p, index=False)
         log.info("static: soil.parquet, columns %s", [c for c in soil.columns if c != "cell_id"])
 
@@ -110,7 +116,7 @@ def export_hls_year(cfg, fc, region, year: int, out: Path, overwrite: bool) -> N
         log.info("%d-%02d HLS: %s, %.0fs", year, m, meta[f"{year}-{m:02d}"], time.time() - t0)
     hls = pd.concat(frames, ignore_index=True).rename(columns={
         "ndvi_stdDev": "ndvi_std", "ndvi_count": "n_valid_px", "px_count": "n_px",
-        "nclear_mean": "n_clear_mean", "nclear_max": "n_clear_max"})
+        "nclear_mean": "n_clear_mean", "nclear_max": "n_clear_max", "aerohi_mean": "aero_hi_frac"})
     hls["valid_frac"] = hls.n_valid_px / hls.n_px.where(hls.n_px > 0)
     hls.to_parquet(p, index=False)
     (out / "hls_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
