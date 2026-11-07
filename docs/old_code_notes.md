@@ -182,3 +182,9 @@ in those folders.
     `ERA5_FAO56_ET0_Tadla_2017-2023.tif` within 0.5–2.5 % every month (1132 vs 1149 mm; r = 0.9999). Standard FAO-56
     (scalar wind, reference-grass Rn) gives 1532 mm there. The "≈ 1150 mm/yr, July ≈ 165 mm" of CLAUDE.md comes from
     this file. See decisions.md D7. The old irrigation requirements (IR = Kc·ET0 − P) inherit the lower ET0.
+17. **The old February–March 2017 NDVI is corrupted (verified 2026-11-07):** in the old 1 km table
+    (`aggregated_1km_data.parquet`, a training table of the old 1 km models) the area-mean NDVI is 0.450 (Feb) and
+    0.226 (Mar) at the peak of the growing season, 35 % of cells are below 0.15 in March, and the spatial correlation
+    between consecutive months collapses (Jan–Feb 0.20, Feb–Mar −0.48, Mar–Apr 0.35; HLS: 0.91, 0.90, 0.83). The rest
+    of old 2017 is ≈ 0.10–0.12 below HLS (≈ 0.03–0.07 in later years). Consistent with the Earth Engine catalogue
+    warning that Sentinel-2 L2A coverage was incomplete in 2017–2018. The old 1 km models were trained on these months.

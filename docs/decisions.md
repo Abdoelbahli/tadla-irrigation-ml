@@ -128,3 +128,11 @@ min, max on the 30 m UTM 29N grid. 2022 check: cell means 369–475 m, median 41
 - SoilGrids has no 0–10 cm layer; the old work used 0–5 cm. Both 0–5 and 5–15 cm are exported.
 - **Decision (2026-11-07): modelling uses the depth-weighted 0–15 cm topsoil value**
   v = (5·v₀₋₅ + 10·v₅₋₁₅) / 15 (columns `<prop>_0_15cm` in `static/soil.parquet`).
+
+## D10 — 2016 kept in the period; quality threshold set in step 2 (2026-11-07)
+
+Clear days per pixel (cell means, all 10 years exported): yearly mean 4.2 in 2016 (Sentinel-2A only), 6.6 in 2017,
+7.8–9.4 in 2018–2020, 9.4–10.3 in 2021–2025. Cell-months with < 1 clear day: 9 (2016), 2 (2017), 0 afterwards;
+with valid-pixel fraction < 0.5: 2 (2016), 1 (2017), 0 afterwards. 2016 is kept (99.9 % of its cell-months have
+≥ 1 clear day per pixel) and handled by the documented cell-month threshold of step 2 (proposal: valid fraction
+≥ 0.5 and ≥ 1 clear day per pixel), plus a with/without-2016 sensitivity test in the validation.
